@@ -1,0 +1,297 @@
+CREATE DATABASE OnlineShopping;
+
+Use OnlineShopping;
+
+CREATE TABLE Customer
+(
+	CustomerID int IDENTITY(1, 1) PRIMARY KEY,
+	FirstName varchar(255) NOT NULL,
+	LastName varchar(255) NOT NULL,
+	DOB date NOT NULL,
+	Email varchar(255) NOT NULL,
+	Password varchar(255) NOT NULL,
+	Contact varchar(255) NOT NULL
+);
+
+CREATE TABLE Country
+(
+	CountryID int IDENTITY(1, 1) PRIMARY KEY,
+	CountryName varchar(255) NOT NULL
+);
+
+CREATE TABLE Province
+(
+	ProvinceID int IDENTITY(1, 1) PRIMARY KEY,
+	ProvinceName varchar(255) NOT NULL
+);
+
+CREATE TABLE City
+(
+	CityID int IDENTITY(1, 1) PRIMARY KEY,
+	CityName varchar(255) NOT NULL
+);
+
+CREATE TABLE ZipCode
+(
+	ZipCodeID int IDENTITY(1, 1) PRIMARY KEY,
+	CityID int FOREIGN KEY REFERENCES City(CityID) NOT NULL,
+	ProvinceID int FOREIGN KEY REFERENCES Province(ProvinceID) NOT NULL,
+	CountryID int FOREIGN KEY REFERENCES Country(CountryID) NOT NULL
+);
+
+CREATE TABLE Address
+(
+	AddressID int IDENTITY(1, 1) PRIMARY KEY,
+	HouseNo varchar(255) NOT NULL,
+	Street int NOT NULL,
+	CustomerID int FOREIGN KEY REFERENCES Customer(CustomerID) NOT NULL,
+	ZipCodeID int FOREIGN KEY REFERENCES ZipCode(ZipCodeID) NOT NULL,
+	Area varchar(255) NOT NULL
+);
+ 
+
+CREATE TABLE Category
+(
+	CategoryID int IDENTITY(1, 1) PRIMARY KEY,
+	CategoryName varchar(255) NOT NULL
+);
+
+CREATE TABLE Vendor
+(
+	VendorID int IDENTITY(1, 1) PRIMARY KEY,
+	Name varchar(255) NOT NULL,
+	Address text NOT NULL,
+	Email varchar(255) NOT NULL,
+	Password varchar(255) NOT NULL,
+	Contact varchar(255) NOT NULL
+);
+
+CREATE TABLE Product
+(
+	ProductID int IDENTITY(1, 1) PRIMARY KEY,
+	ProductName varchar(255) NOT NULL,
+	CategoryID int FOREIGN KEY REFERENCES Category(CategoryID) NOT NULL
+);
+
+CREATE TABLE VendorProduct
+(
+	VendorProductID int IDENTITY(1, 1) PRIMARY KEY,
+	VendorID int FOREIGN KEY REFERENCES Vendor(VendorID) NOT NULL,
+	ProductID int FOREIGN KEY REFERENCES Product(ProductID) NOT NULL,
+	Price decimal(19, 2) NOT NULL,
+	Quantity int NOT NULL,
+	Description text NOT NULL
+);
+
+CREATE TABLE Courier
+(
+	CourierID int IDENTITY(1, 1) PRIMARY KEY,
+	Name varchar(255) NOT NULL,
+	Contact varchar(255) NOT NULL
+);
+
+CREATE TABLE VendorCourier
+(
+	VendorCourierID int IDENTITY(1, 1) PRIMARY KEY,
+	VendorID int FOREIGN KEY REFERENCES Vendor(VendorID) NOT NULL,
+	CourierID int FOREIGN KEY REFERENCES Courier(CourierID) NOT NULL
+);
+
+CREATE TABLE Orders
+(
+	OrderID int IDENTITY(1, 1) PRIMARY KEY,
+	CustomerID int FOREIGN KEY REFERENCES Customer(CustomerID) NOT NULL,
+	OrderDate date NOT NULL,
+	AddressID int FOREIGN KEY REFERENCES Address(AddressID) NOT NULL,
+	VendorCourierID int FOREIGN KEY REFERENCES VendorCourier(VendorCourierID) NOT NULL,
+	TrackingID varchar(255) NOT NULL
+);
+
+CREATE TABLE OrderedProduct
+(
+	OrderedProductID int IDENTITY(1, 1) PRIMARY KEY,
+	VendorProductID int FOREIGN KEY REFERENCES VendorProduct(VendorProductID) NOT NULL,
+	OrderID int FOREIGN KEY REFERENCES Orders(OrderID) NOT NULL,
+	Quantity int NOT NULL
+);
+
+CREATE TABLE Review
+(
+	ReviewID int IDENTITY(1, 1) PRIMARY KEY,
+	Rating tinyint NOT NULL,
+	Comment text,
+	CustomerID int FOREIGN KEY REFERENCES Customer(CustomerID) NOT NULL,
+	OrderedProductID int FOREIGN KEY REFERENCES OrderedProduct(OrderedProductID) NOT NULL,
+);
+
+CREATE TABLE Cart
+(
+	CartID int IDENTITY(1, 1) PRIMARY KEY,
+	DateCreated date NOT NULL,
+	CustomerID int FOREIGN KEY REFERENCES Customer(CustomerID) NOT NULL,
+);
+
+CREATE TABLE CartProduct
+(
+	CartProductID int IDENTITY(1, 1) PRIMARY KEY,
+	VendorProductID int FOREIGN KEY REFERENCES VendorProduct(VendorProductID) NOT NULL,
+	Quantity int NOT NULL,
+	CartID int FOREIGN KEY REFERENCES Cart(CartID) NOT NULL
+);
+
+SELECT * FROM Customer;
+SELECT * FROM Country;
+SELECT * FROM City;
+SELECT * FROM Province;
+SELECT * FROM ZipCode;
+SELECT * FROM Address;
+SELECT * FROM Category;
+SELECT * FROM Vendor;
+SELECT * FROM Product;
+SELECT * FROM VendorProduct;
+SELECT * FROM Courier;
+SELECT * FROM VendorCourier;
+SELECT * FROM Orders;
+SELECT * FROM OrderedProduct;
+SELECT * FROM Review;
+SELECT * FROM Cart;
+SELECT * FROM CartProduct;
+
+CREATE VIEW CustomerLogInfo AS
+SELECT FirstName, LastName, Email, Password
+FROM Customer;
+
+CREATE VIEW CustomerContact AS
+SELECT FirstName, LastName, Email, Contact
+FROM Customer;
+
+CREATE VIEW CustomerBirthday AS
+SELECT FirstName, LastName, DOB, Email
+FROM Customer;
+
+CREATE VIEW Vendors AS
+SELECT
+    V.Name AS VendorName,
+    V.Address AS VendorAddress,
+    V.Email AS VendorEmail,
+    V.Contact AS VendorContact,
+    P.ProductName,
+    VP.Price,
+    VP.Quantity,
+    VP.Description
+FROM
+    Vendor V
+INNER JOIN
+    VendorProduct VP ON V.VendorID = VP.VendorID
+INNER JOIN
+    Product P ON VP.ProductID = P.ProductID;
+
+CREATE VIEW CustomerProductReview AS
+SELECT
+    CONCAT(C.FirstName, ' ', C.LastName) AS CustomerName,
+    P.ProductName,
+    R.Rating,
+    R.Comment
+FROM
+    Review R
+JOIN
+    Customer C ON R.CustomerID = C.CustomerID
+JOIN
+    OrderedProduct OP ON R.OrderedProductID = OP.OrderedProductID
+JOIN
+    VendorProduct VP ON OP.VendorProductID = VP.VendorProductID
+JOIN
+    Product P ON VP.ProductID = P.ProductID;
+
+SELECT *
+FROM CustomerLogInfo;
+
+SELECT *
+FROM CustomerContact;
+
+SELECT *
+FROM CustomerBirthday;
+
+SELECT *
+FROM Vendors;
+
+SELECT *
+FROM CustomerProductReview;
+
+CREATE INDEX idx_ProductName ON Product(ProductName);
+
+CREATE INDEX idx_ProductDescription ON Category(CategoryName);
+
+CREATE INDEX idx_CustomerID ON Orders(CustomerID);
+
+CREATE INDEX idx_Email ON Customer(Email);
+
+CREATE INDEX idx_FirstName ON Customer(FirstName);
+
+CREATE INDEX idx_LastName ON Customer(LastName);
+
+CREATE INDEX idx_OrderTotal ON Orders(OrderID);
+
+CREATE INDEX idx_Rating ON Review(Rating);
+
+CREATE TRIGGER trg_PreventDeleteProduct
+ON Product
+INSTEAD OF DELETE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM deleted d
+        JOIN OrderedProduct op ON op.OrderedProductID = d.ProductID
+    )
+    BEGIN
+        RAISERROR('Cannot delete product with pending orders!', 16, 1);
+    END;
+    ELSE
+    BEGIN
+        DELETE p
+        FROM Product p
+        JOIN deleted d ON p.ProductID = d.ProductID;
+    END;
+END;
+
+CREATE TABLE AuditDeletedProducts (
+    DeletedProductID INT,
+    DeletedProductName VARCHAR(255),
+    DeletedDateTime DATETIME
+);
+
+CREATE TRIGGER trg_AfterDeleteProduct
+ON Product
+AFTER DELETE
+AS
+BEGIN
+    INSERT INTO AuditDeletedProducts (DeletedProductID, DeletedProductName, DeletedDateTime)
+    SELECT d.ProductID, d.ProductName, GETDATE()
+    FROM deleted d;
+END;
+
+
+CREATE TRIGGER trg_AfterInsertProduct
+ON Product
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO ProductAudit (Action, ProductID, ProductName, ChangedDateTime)
+    SELECT 'INSERT', ProductID, ProductName, GETDATE()
+    FROM inserted;
+END;
+
+CREATE TRIGGER trg_AfterUpdateProduct
+ON Product
+AFTER UPDATE
+AS
+BEGIN
+    INSERT INTO ProductAudit (Action, ProductID, ProductName, ChangedDateTime)
+    SELECT 'UPDATE', i.ProductID, i.ProductName, GETDATE()
+    FROM inserted i
+    JOIN deleted d ON i.ProductID = d.ProductID;
+END;
+
+SELECT *
+FROM ProductAudit;
